@@ -2,15 +2,15 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecure.h>
 
-#define WIFI_SSID       "<WIFI_SSID_REMOVED>"
-#define WIFI_PASSWORD   "Cristian"
+#define WIFI_SSID       "YOUR_SSID"
+#define WIFI_PASSWORD   "YOUR_PASSWORD"
 
 // Endpoint Supabase
-String TABLE_AUTH_URL = "https://<SUPABASE_PROJECT_REMOVED>.supabase.co/rest/v1/Authorized";
-String TABLE_LOGS_URL = "https://<SUPABASE_PROJECT_REMOVED>.supabase.co/rest/v1/logs";
+String TABLE_AUTH_URL = "YOUR_AUTH_URL";
+String TABLE_LOGS_URL = "YOUR_LOG_URL";
 
 // Supabase API key
-String SUPABASE_API_KEY = "<SUPABASE_SERVICE_KEY_REMOVED>";
+String SUPABASE_API_KEY = "YOUR_API_KEY";
 
 WiFiClientSecure client;
 
