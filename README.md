@@ -5,6 +5,17 @@ An IoT access-control system that identifies a user via **RFID/NFC**, verifies t
 > 🏆 3rd **"Salvatore Di Bartolo" Award** — ITIS "E. Fermi", Giarre.
 > Submitted to the national STMicroelectronics *Build the Future with STM32ODE* contest.
 
+<table>
+<tr>
+<td width="42%"><img src="./docs/device.jpg" alt="The reader mounted by a door: two status LEDs, the NFC window, and the Time-of-Flight sensor on top"></td>
+<td width="58%"><img src="./docs/demo.gif" alt="The mobile app writing the user's UUID to the phone's NFC tag"></td>
+</tr>
+<tr>
+<td align="center"><sub>The reader, mounted</sub></td>
+<td align="center"><sub>Enrolment: the app writes the UUID to the phone's tag</sub></td>
+</tr>
+</table>
+
 The system spans four areas in a single architecture: embedded firmware, serial communication, networking/cloud, and mobile development. A particularly modern touch: the **smartphone itself acts as the NFC tag**, so no physical badges are needed.
 
 📄 Full technical documentation: [`AuthLog-Documentation.pdf`](./AuthLog-Documentation.pdf)
@@ -62,6 +73,10 @@ Each firmware sketch lives in its own folder because the Arduino toolchain compi
 
 ## Hardware
 
+![Inside the enclosure: the Nucleo with the NFC shield, the ESP8266 gateway, and the status LEDs wired in](./docs/internals.jpg)
+
+<sub>Inside the enclosure. The NFC antenna sits behind the front window, the ESP8266 is on the right, and the two status LEDs are wired to the front panel.</sub>
+
 | Component | Part | Role |
 |-----------|------|------|
 | Microcontroller | STM32 Nucleo-64 **F401RE** | Reads NFC, local logic, lock control, ToF over I²C |
@@ -69,6 +84,10 @@ Each firmware sketch lives in its own folder because the Arduino toolchain compi
 | NFC reader | **X-NUCLEO-NFC04A1** (ST25DV) | Reads the UUID from a phone-written tag |
 | Distance sensor | **X-NUCLEO-53L4A2** (VL53L4CD) | Time-of-Flight presence detection |
 | Output | LEDs + relay (electric lock) | Visual feedback and door control |
+
+![The same boards on the bench, before assembly](./docs/prototype.jpg)
+
+<sub>The same boards on the bench during development.</sub>
 
 ### STM32 ↔ ESP8266 link
 

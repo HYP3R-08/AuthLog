@@ -29,8 +29,10 @@ constexpr uint32_t SERIAL_BAUD              = 115200;
 constexpr uint32_t I2C_CLOCK_HZ             = 100000;
 constexpr int      ST25DV_GPO_PIN           = 12;
 
-constexpr uint8_t  LED_GRANTED_PIN          = D7;   // green
-constexpr uint8_t  LED_DENIED_PIN           = D6;   // red
+constexpr uint8_t  LED_GRANTED_PIN          = D7;
+constexpr uint8_t  LED_DENIED_PIN           = D6;
+// Not wired on the prototype, which drives the LEDs only. Check this against
+// the build before connecting a relay to it.
 constexpr uint8_t  LOCK_RELAY_PIN           = D5;
 
 // Presence window. Below the minimum the reading is unreliable; above the
