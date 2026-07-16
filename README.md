@@ -18,7 +18,13 @@ An IoT access-control system that identifies a user via **RFID/NFC**, verifies t
 
 The system spans four areas in a single architecture: embedded firmware, serial communication, networking/cloud, and mobile development. A particularly modern touch: the **smartphone itself acts as the NFC tag**, so no physical badges are needed.
 
-📄 Full technical documentation: [`AuthLog-Documentation.pdf`](./AuthLog-Documentation.pdf)
+## Why
+
+Physical keys and offline badges are hard to keep current: revoking one means collecting it, and the device itself has to be reprogrammed by hand. Neither leaves a record of who went where.
+
+AuthLog moves the decision off the door. Credentials are checked against a database that can be updated from anywhere, every attempt is logged for traceability, users are managed from a phone rather than at the lock, and the reader itself stays replaceable — it holds no user list and no credential of its own.
+
+The setting this was built for is a school or a lab: places where access has to be reliable and auditable, and where changing who gets in should not require a screwdriver.
 
 ---
 
