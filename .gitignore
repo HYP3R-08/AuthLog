@@ -1,0 +1,40 @@
+# Secrets — never commit these.
+# The examples (secrets.h.example, .env.example) are committed instead.
+secrets.h
+.env
+.env.*
+!.env.example
+
+# Firmware build output
+build/
+.pio/
+.pioenvs/
+*.bin
+*.elf
+*.hex
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# Generated native projects
+/mobile/android/
+/mobile/ios/
+
+# Signing material
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
