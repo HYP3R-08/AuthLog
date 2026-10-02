@@ -20,8 +20,13 @@
 #include <Wire.h>
 
 #define SerialDebug      Serial
-#define SerialGateway    Serial2
 #define DEV_I2C          Wire
+
+// On the Nucleo-F401RE, `Serial` IS `Serial2`: both are USART2 on PA2/PA3,
+// wired to the ST-LINK USB port. Using it for the gateway sends the UUID to the
+// PC instead of the ESP8266. USART6 on PA11 (TX) / PA12 (RX) is free: the pins
+// sit on the morpho connector CN10, away from the shields' Arduino headers.
+HardwareSerial SerialGateway(PA12, PA11);  // (RX, TX)
 
 namespace {
 
@@ -77,6 +82,7 @@ VL53L4CD tofSensor(&DEV_I2C, -1);
 State state = State::Idle;
 uint32_t stateEnteredAt = 0;
 String lastUuid = "";
+bool tagConsumed = false;
 char lineBuffer[LINE_BUFFER_SIZE];
 size_t lineLength = 0;
 
@@ -174,6 +180,14 @@ String readTagUuid() {
   return isValidUuid(uri) ? uri : "";
 }
 
+// The "tag" is the ST25DV's own EEPROM: the phone writes the UUID into it and
+// it stays there after the phone leaves. Unless it is overwritten, every later
+// presence reading would find the same UUID and send it again. Replacing it
+// with a value that fails isValidUuid() makes each phone write count once.
+bool consumeTag() {
+  return st25dv.writeURI("https://", "consumed", "") == 0;
+}
+
 void requestVerification(const String& uuid) {
   SerialGateway.print(PROTOCOL_UUID_PREFIX);
   SerialGateway.println(uuid);
@@ -229,6 +243,12 @@ void runStateMachine() {
         return;
       }
       lastUuid = uuid;
+      tagConsumed = consumeTag();
+      if (!tagConsumed) {
+        // Typically the phone is still holding the RF interface. lastUuid then
+        // stays set past the cooldown, so the stale UUID is not resent.
+        SerialDebug.println(F("could not clear tag"));
+      }
       requestVerification(uuid);
       enterState(State::AwaitingVerdict);
       break;
@@ -259,7 +279,9 @@ void runStateMachine() {
 
     case State::Cooldown:
       if (stateElapsed(TAG_COOLDOWN_MS)) {
-        lastUuid = "";  // the same tag may be presented again
+        if (tagConsumed) {
+          lastUuid = "";  // the same UUID may be written and presented again
+        }
         enterState(State::Idle);
       }
       break;
