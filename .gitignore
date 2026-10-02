@@ -20,6 +20,9 @@ dist/
 web-build/
 *.tsbuildinfo
 
+# Supabase CLI local state
+supabase/.temp/
+
 # Generated native projects
 /mobile/android/
 /mobile/ios/

@@ -102,10 +102,14 @@ sends the UUID and waits for the verdict, so a transmit-only link leaves it
 waiting until it times out and denies every tag.
 
 ```
-STM32 Serial2 TX  ──────▶  ESP8266 RX     UUID:<uuid>
-STM32 Serial2 RX  ◀──────  ESP8266 TX     AUTH:OK | AUTH:NO | AUTH:ERR
-        GND       ◀─────▶  GND            common ground
+STM32 PA11 (USART6 TX)  ──────▶  ESP8266 RX     UUID:<uuid>
+STM32 PA12 (USART6 RX)  ◀──────  ESP8266 TX     AUTH:OK | AUTH:NO | AUTH:ERR
+        GND             ◀─────▶  GND            common ground
 ```
+
+PA11 and PA12 are on the morpho connector CN10 (pins 14 and 12). Do not use
+D0/D1 or `Serial2`: on the Nucleo-F401RE that is USART2, the same port as
+`Serial`, and it is wired to the ST-LINK USB bridge.
 
 Both boards run at 3.3 V, so the lines connect directly — no level shifter.
 
@@ -123,10 +127,12 @@ supabase db push        # review supabase/migrations/0001_schema.sql first
 
 ```bash
 supabase secrets set DEVICE_TOKEN=$(openssl rand -hex 32)
-supabase functions deploy verify-access
+supabase functions deploy verify-access --no-verify-jwt
 ```
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected by the platform. Use the same `DEVICE_TOKEN` value in the gateway's `secrets.h`.
+
+`--no-verify-jwt` is required: the gateway authenticates with its device token, which the function checks itself, and carries no Supabase JWT.
 
 ### Firmware
 
@@ -145,6 +151,14 @@ cp .env.example .env       # fill in the URL and the publishable (anon) key
 npm install
 npx expo prebuild          # NFC needs a native build — Expo Go will not do
 npx expo run:android
+```
+
+For an EAS cloud build, `.env` is not uploaded (it is gitignored). Set the same two variables on EAS instead; each profile in `eas.json` names the environment it reads them from:
+
+```bash
+npx eas-cli env:create --name EXPO_PUBLIC_SUPABASE_URL --value <url> --environment preview --visibility plaintext
+npx eas-cli env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <publishable-key> --environment preview --visibility plaintext
+npx eas-cli build -p android --profile preview
 ```
 
 ---
