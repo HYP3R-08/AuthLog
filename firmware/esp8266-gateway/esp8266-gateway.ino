@@ -125,6 +125,10 @@ bool requestVerdict(const char* uuid, bool& authorized) {
 
   HTTPClient http;
   http.setTimeout(HTTP_TIMEOUT_MS);
+  // The endpoint answers HTTP/1.1 requests with Transfer-Encoding: chunked, and
+  // getStream() hands back the raw chunk framing, which ArduinoJson rejects as
+  // InvalidInput. HTTP/1.0 has no chunking, so the stream is the bare body.
+  http.useHTTP10(true);
   if (!http.begin(client, VERIFY_ENDPOINT)) {
     DEBUG_LOG(F("http begin failed"));
     return false;
