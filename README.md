@@ -123,6 +123,13 @@ Both boards run at 3.3 V, so the lines connect directly — no level shifter.
 supabase db push        # review supabase/migrations/0001_schema.sql first
 ```
 
+`0002_admin_logs.sql` adds administrators, who can read the access log from the app (name, verdict, date and time). Membership cannot be granted through the API; add an administrator from the SQL editor:
+
+```sql
+insert into public.admins (uuid)
+select id from public.profiles where nome = '<nome>' and cognome = '<cognome>';
+```
+
 ### Edge Function
 
 ```bash
