@@ -1,176 +1,144 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Alert, TextInput, Text, TouchableOpacity } from 'react-native';
-import { supabase } from '../lib/supabase';
-import { describeAuthError } from '../lib/session';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../App';
+import React, { useState } from 'react'
+import { Alert, StyleSheet, View } from 'react-native'
+import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import type { RootStackParamList } from '../App'
+import { supabase } from '../lib/supabase'
+import { describeAuthError } from '../lib/session'
+import Screen from '../components/Screen'
+import TextField from '../components/TextField'
+import Button from '../components/Button'
+import AppText from '../components/AppText'
+import IconButton from '../components/IconButton'
+import { colors, space } from '../theme/tokens'
 
-type SignupScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Signup'>;
+type SignupScreenProps = NativeStackScreenProps<RootStackParamList, 'Signup'>
 
-interface SignupScreenProps {
-  navigation: SignupScreenNavigationProp;
+const MIN_PASSWORD_LENGTH = 8
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+interface SignupForm {
+  nome: string
+  cognome: string
+  email: string
+  password: string
 }
 
-const MIN_PASSWORD_LENGTH = 8;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function validate(form: SignupForm): string | null {
+  if (!form.nome.trim() || !form.cognome.trim() || !form.email.trim() || !form.password) {
+    return 'Compila tutti i campi'
+  }
+  if (!EMAIL_PATTERN.test(form.email.trim())) {
+    return 'Inserisci un indirizzo email valido'
+  }
+  if (form.password.length < MIN_PASSWORD_LENGTH) {
+    return `La password deve avere almeno ${MIN_PASSWORD_LENGTH} caratteri`
+  }
+  return null
+}
 
 export default function SignupScreen({ navigation }: SignupScreenProps) {
-  const [nome, setNome] = useState('');
-  const [cognome, setCognome] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState<SignupForm>({ nome: '', cognome: '', email: '', password: '' })
+  const [loading, setLoading] = useState(false)
 
-  function validate(): string | null {
-    if (!nome || !cognome || !email || !password) {
-      return 'Inserisci tutti i campi';
-    }
-    if (!EMAIL_PATTERN.test(email)) {
-      return 'Inserisci un indirizzo email valido';
-    }
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      return `La password deve essere di almeno ${MIN_PASSWORD_LENGTH} caratteri`;
-    }
-    return null;
-  }
+  const update = (field: keyof SignupForm) => (value: string) =>
+    setForm((current) => ({ ...current, [field]: value }))
 
   async function handleSignup() {
-    const validationError = validate();
+    const validationError = validate(form)
     if (validationError) {
-      Alert.alert('Errore', validationError);
-      return;
+      Alert.alert('Controlla i dati', validationError)
+      return
     }
 
-    setLoading(true);
-
-    // Supabase Auth owns the credential: it hashes the password, enforces
-    // uniqueness, and rate-limits attempts. The profile row is created by a
-    // database trigger from this metadata, so the client never writes a row it
-    // could forge — and no password column exists to leak.
+    setLoading(true)
+    // Supabase Auth owns the credential. The profile row is created by a
+    // database trigger from this metadata, so the client never writes it.
     const { error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        data: { nome: nome.trim(), cognome: cognome.trim() },
-      },
-    });
-
-    setLoading(false);
+      email: form.email.trim(),
+      password: form.password,
+      options: { data: { nome: form.nome.trim(), cognome: form.cognome.trim() } },
+    })
+    setLoading(false)
 
     if (error) {
-      Alert.alert('Errore registrazione', describeAuthError(error));
-      return;
+      Alert.alert('Registrazione non riuscita', describeAuthError(error))
+      return
     }
 
-    // With email confirmation enabled there is no session yet, so the user is
-    // sent to the login screen rather than straight in.
     Alert.alert(
-      'Successo',
-      'Registrazione completata. Controlla la tua email per confermare l\'account, poi accedi.',
+      'Controlla la tua email',
+      'Ti abbiamo inviato un link di conferma. Aprilo, poi accedi.',
       [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
-    );
+    )
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Nome</Text>
-      <TextInput
-        style={styles.input}
-        value={nome}
-        onChangeText={setNome}
-        placeholder="Inserisci nome"
-      />
+    <Screen scroll contentStyle={styles.content}>
+      <View style={styles.topBar}>
+        <IconButton icon="chevron-back" label="Indietro" onPress={() => navigation.goBack()} />
+      </View>
 
-      <Text style={styles.label}>Cognome</Text>
-      <TextInput
-        style={styles.input}
-        value={cognome}
-        onChangeText={setCognome}
-        placeholder="Inserisci cognome"
-      />
+      <View style={styles.header}>
+        <AppText variant="overline" color={colors.brand}>
+          NUOVO ACCOUNT
+        </AppText>
+        <AppText variant="title">Crea il tuo pass</AppText>
+        <AppText variant="body" color={colors.textMuted}>
+          Dopo la registrazione un amministratore abiliterà il tuo accesso.
+        </AppText>
+      </View>
 
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
-        value={email}
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        onChangeText={setEmail}
-        placeholder="Inserisci email"
-      />
-
-      <Text style={styles.label}>Password</Text>
-      <TextInput
-        style={styles.input}
-        value={password}
-        secureTextEntry
-        autoComplete="new-password"
-        onChangeText={setPassword}
-        placeholder={`Almeno ${MIN_PASSWORD_LENGTH} caratteri`}
-      />
-
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleSignup}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>{loading ? 'Registrazione...' : 'Registrati'}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.linkButton}
-        onPress={() => navigation.navigate('Login')}
-      >
-        <Text style={styles.linkText}>Hai già un account? Accedi</Text>
-      </TouchableOpacity>
-    </View>
-  );
+      <View style={styles.form}>
+        <View style={styles.row}>
+          <TextField
+            label="Nome"
+            icon="person-outline"
+            value={form.nome}
+            onChangeText={update('nome')}
+            placeholder="Mario"
+            autoComplete="given-name"
+            style={styles.half}
+          />
+          <TextField
+            label="Cognome"
+            icon="people-outline"
+            value={form.cognome}
+            onChangeText={update('cognome')}
+            placeholder="Rossi"
+            autoComplete="family-name"
+            style={styles.half}
+          />
+        </View>
+        <TextField
+          label="Email"
+          icon="mail-outline"
+          value={form.email}
+          onChangeText={update('email')}
+          placeholder="nome@esempio.it"
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+        />
+        <TextField
+          label="Password"
+          icon="lock-closed-outline"
+          isSecret
+          value={form.password}
+          onChangeText={update('password')}
+          placeholder={`Almeno ${MIN_PASSWORD_LENGTH} caratteri`}
+          autoComplete="new-password"
+        />
+        <Button label="Registrati" icon="checkmark" onPress={handleSignup} loading={loading} />
+      </View>
+    </Screen>
+  )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginTop: 40,
-    padding: 15,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 15,
-    marginBottom: 5,
-    color: '#333',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    marginBottom: 5,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkButton: {
-    marginTop: 15,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: '#007AFF',
-    fontSize: 14,
-  },
-});
+  content: { paddingTop: space.lg, gap: space.xxl },
+  topBar: { flexDirection: 'row' },
+  header: { gap: space.sm },
+  form: { gap: space.lg },
+  row: { flexDirection: 'row', gap: space.md },
+  half: { flex: 1 },
+})

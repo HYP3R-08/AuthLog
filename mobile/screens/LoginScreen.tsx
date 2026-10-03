@@ -1,135 +1,97 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Alert, TextInput, Text, TouchableOpacity } from 'react-native';
-import { supabase } from '../lib/supabase';
-import { describeAuthError } from '../lib/session';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../App';
+import React, { useState } from 'react'
+import { Alert, Pressable, StyleSheet, View } from 'react-native'
+import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import type { RootStackParamList } from '../App'
+import { supabase } from '../lib/supabase'
+import { describeAuthError } from '../lib/session'
+import Screen from '../components/Screen'
+import BrandMark from '../components/BrandMark'
+import TextField from '../components/TextField'
+import Button from '../components/Button'
+import AppText from '../components/AppText'
+import { colors, space } from '../theme/tokens'
 
-type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
-
-interface LoginScreenProps {
-  navigation: LoginScreenNavigationProp;
-}
+type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
   async function handleLogin() {
-    if (!email || !password) {
-      Alert.alert('Errore', 'Inserisci email e password');
-      return;
+    if (!email.trim() || !password) {
+      Alert.alert('Campi mancanti', 'Inserisci email e password')
+      return
     }
 
-    setLoading(true);
-
-    // The password is sent to Supabase Auth, which compares it against a bcrypt
-    // hash server-side. It is never stored, queried, or compared by this app.
+    setLoading(true)
+    // The password goes to Supabase Auth, which checks it against a bcrypt hash
+    // server-side. It is never stored, queried or compared by this app.
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
-    });
-
-    setLoading(false);
+    })
+    setLoading(false)
 
     if (error || !data.user) {
-      Alert.alert('Errore', describeAuthError(error));
-      return;
+      Alert.alert('Accesso non riuscito', describeAuthError(error))
+      return
     }
 
-    // The uuid is the authenticated user id, established by the session rather
-    // than returned by a query the client controls.
-    navigation.navigate('Home', {
-      email: data.user.email ?? email.trim(),
-      uuid: data.user.id,
-    });
+    navigation.reset({ index: 0, routes: [{ name: 'Home' }] })
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
-        value={email}
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        onChangeText={setEmail}
-        placeholder="Inserisci email"
-      />
+    <Screen scroll contentStyle={styles.content}>
+      <BrandMark tagline="Il tuo telefono è la chiave." />
 
-      <Text style={styles.label}>Password</Text>
-      <TextInput
-        style={styles.input}
-        value={password}
-        secureTextEntry
-        autoComplete="current-password"
-        onChangeText={setPassword}
-        placeholder="Inserisci password"
-      />
+      <View style={styles.form}>
+        <TextField
+          label="Email"
+          icon="mail-outline"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="nome@esempio.it"
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          textContentType="emailAddress"
+          returnKeyType="next"
+        />
+        <TextField
+          label="Password"
+          icon="lock-closed-outline"
+          isSecret
+          value={password}
+          onChangeText={setPassword}
+          placeholder="La tua password"
+          autoComplete="current-password"
+          textContentType="password"
+          returnKeyType="go"
+          onSubmitEditing={handleLogin}
+        />
+        <Button label="Accedi" icon="arrow-forward" onPress={handleLogin} loading={loading} />
+      </View>
 
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleLogin}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>{loading ? 'Accesso...' : 'Accedi'}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.linkButton}
+      <Pressable
         onPress={() => navigation.navigate('Signup')}
+        style={({ pressed }) => [styles.footer, pressed && styles.footerPressed]}
+        accessibilityRole="link"
       >
-        <Text style={styles.linkText}>Registrati</Text>
-      </TouchableOpacity>
-    </View>
-  );
+        <AppText variant="body" color={colors.textMuted} align="center">
+          Non hai un account?{' '}
+          <AppText variant="bodyStrong" color={colors.brand}>
+            Registrati
+          </AppText>
+        </AppText>
+      </Pressable>
+    </Screen>
+  )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginTop: 40,
-    padding: 15,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 15,
-    marginBottom: 5,
-    color: '#333',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    marginBottom: 5,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkButton: {
-    marginTop: 15,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: '#007AFF',
-    fontSize: 14,
-  },
-});
+  content: { justifyContent: 'center', paddingTop: space.xxxl, gap: space.xxxl },
+  form: { gap: space.lg },
+  footer: { paddingVertical: space.md },
+  footerPressed: { opacity: 0.6 },
+})
