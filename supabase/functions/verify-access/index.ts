@@ -97,7 +97,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
   const { error: logError } = await supabase
     .from('logs')
-    .insert({ uuid_auth: authorized ? uuid : null, granted: authorized })
+    .insert({ uuid_auth: uuid, granted: authorized })
 
   if (logError) {
     // Logging is best-effort: a failed audit write must not deny a legitimate
