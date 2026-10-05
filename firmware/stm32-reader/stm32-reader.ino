@@ -1,15 +1,20 @@
 // AuthLog — STM32 reader
 //
 // Detects presence with a Time-of-Flight sensor, reads a UUID from an NFC tag,
-// asks the ESP8266 gateway to verify it, and drives the LEDs and the lock
-// according to the verdict.
+// asks the gateway (ESP8266 or UNIHIKER K10) to verify it, and drives the LEDs
+// and the lock according to the verdict.
 //
 // This board owns every physical output. The gateway only answers the question
 // "is this UUID authorized?" — it never actuates anything itself.
 //
 // Wire protocol (UART to the gateway, 115200 8N1):
 //   out  UUID:<36-char uuid>\n
+//   out  PRESENCE:NEAR\n | PRESENCE:AWAY\n   (someone entered / left the ToF window)
 //   in   AUTH:OK\n | AUTH:NO\n | AUTH:ERR\n
+//
+// The PRESENCE lines let a gateway with a screen greet the person before they
+// present the phone. A gateway without one ignores them: both gateways act only
+// on lines that start with "UUID:".
 //
 // AUTH:ERR (could not verify) is deliberately not treated as AUTH:NO: the lock
 // stays shut either way, but the operator sees a different signal, because
@@ -67,6 +72,8 @@ const char PROTOCOL_UUID_PREFIX[] = "UUID:";
 const char RESPONSE_GRANTED[]     = "AUTH:OK";
 const char RESPONSE_DENIED[]      = "AUTH:NO";
 const char RESPONSE_ERROR[]       = "AUTH:ERR";
+const char EVENT_PRESENCE_NEAR[]  = "PRESENCE:NEAR";
+const char EVENT_PRESENCE_AWAY[]  = "PRESENCE:AWAY";
 
 enum class State : uint8_t {
   Idle,           // waiting for someone to show up
@@ -88,6 +95,7 @@ size_t lineLength = 0;
 
 bool presenceDetected = false;
 uint32_t presenceSeenAt = 0;
+bool presenceReported = false;
 
 void enterState(State next) {
   state = next;
@@ -145,6 +153,18 @@ void updatePresence() {
 // sensor's cadence so a tag presented between two samples is not ignored.
 bool isPersonPresent() {
   return presenceDetected && (millis() - presenceSeenAt < PRESENCE_HOLD_MS);
+}
+
+// Sends one line per change, not one per poll: the gateway only needs to know
+// when someone arrives or leaves, and a line every 100 ms would flood the UART
+// it also uses for verdicts.
+void reportPresenceChange() {
+  const bool present = isPersonPresent();
+  if (present == presenceReported) {
+    return;
+  }
+  presenceReported = present;
+  SerialGateway.println(present ? EVENT_PRESENCE_NEAR : EVENT_PRESENCE_AWAY);
 }
 
 bool isValidUuid(const String& uuid) {
@@ -317,6 +337,7 @@ void setup() {
 
 void loop() {
   updatePresence();
+  reportPresenceChange();
   pollGateway();
   runStateMachine();
   delay(POLL_INTERVAL_MS);
