@@ -6,7 +6,11 @@
 //
 // Request   POST { "uuid": "<36-char uuid>" }
 //           X-Device-Token: <shared device secret>
-// Response  200 { "authorized": true | false }
+// Response  200 { "authorized": true | false, "name"?: "<first name>" }
+//
+// `name` is present only when access is granted, so a gateway with a screen
+// can greet the person. It is the first name alone, and never sent for a
+// rejected UUID: a door should not confirm who a stranger's tag belongs to.
 //
 // Every attempt is logged, authorized or not — a log that only records success
 // is useless for spotting someone probing the door.
@@ -105,5 +109,18 @@ Deno.serve(async (request: Request): Promise<Response> => {
     console.error('log insert failed', logError)
   }
 
-  return json({ authorized })
+  if (!authorized) {
+    return json({ authorized })
+  }
+
+  // Best-effort, like the log: a missing name must not turn a valid entry into
+  // a failure, the gateway simply greets without it.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('nome')
+    .eq('id', uuid)
+    .maybeSingle()
+
+  const name = typeof profile?.nome === 'string' ? profile.nome.trim() : ''
+  return json(name ? { authorized, name } : { authorized })
 })
