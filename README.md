@@ -67,6 +67,7 @@ The gateway holds **no Supabase credential**. It authenticates to the Edge Funct
 firmware/
   stm32-reader/       STM32 firmware — NFC, ToF, LEDs, lock, UART
   esp8266-gateway/    ESP8266 firmware — Wi-Fi, HTTPS, verdict relay
+  k10-gateway/        UNIHIKER K10 firmware: same gateway, plus screen and sound
 mobile/               React Native (Expo) app — sign-up, login, NFC write
 supabase/
   functions/          verify-access Edge Function
@@ -87,6 +88,7 @@ Each firmware sketch lives in its own folder because the Arduino toolchain compi
 |-----------|------|------|
 | Microcontroller | STM32 Nucleo-64 **F401RE** | Reads NFC, local logic, lock control, ToF over I²C |
 | Wi-Fi module | **ESP8266 (ESP-12E)** | Internet connectivity, Edge Function client |
+| Gateway with screen (alternative) | **UNIHIKER K10** (ESP32-S3) | Replaces the ESP8266: same role, plus on-screen messages and sounds |
 | NFC reader | **X-NUCLEO-NFC04A1** (ST25DV) | Reads the UUID from a phone-written tag |
 | Distance sensor | **X-NUCLEO-53L4A2** (VL53L4CD) | Time-of-Flight presence detection |
 | Output | LEDs + relay (electric lock) | Visual feedback and door control |
@@ -112,6 +114,18 @@ D0/D1 or `Serial2`: on the Nucleo-F401RE that is USART2, the same port as
 `Serial`, and it is wired to the ST-LINK USB bridge.
 
 Both boards run at 3.3 V, so the lines connect directly — no level shifter.
+
+### Gateway variant: UNIHIKER K10
+
+The K10 replaces the ESP8266 and speaks the same protocol, so the STM32 only needs two wires moved. On top of relaying the verdict, it shows what is happening ("Avvicina il telefono", "Accesso consentito", "Accesso negato", "Server non raggiungibile") and plays a sound for each. The reader also sends `PRESENCE:NEAR` / `PRESENCE:AWAY` when someone enters or leaves the ToF window, which the K10 uses to greet them; the ESP8266 gateway ignores those lines.
+
+```
+STM32 PA11 (USART6 TX, CN10-14)  ──────▶  K10 P0 (GPIO1, RX)
+STM32 PA12 (USART6 RX, CN10-12)  ◀──────  K10 P1 (GPIO2, TX)
+        GND                      ◀─────▶  K10 GND
+```
+
+Use **P0 and P1** only: they are the edge pins wired straight to the ESP32-S3, while the others go through an I/O expander that cannot carry a UART. Power the K10 from its own USB-C port, not from the Nucleo.
 
 ---
 
@@ -149,6 +163,8 @@ cp firmware/esp8266-gateway/secrets.h.example firmware/esp8266-gateway/secrets.h
 ```
 
 `secrets.h` is gitignored. Requires the **ArduinoJson** library and the ESP8266 Arduino core; open each sketch folder separately.
+
+For the K10 gateway, use `firmware/k10-gateway/` the same way. Add `https://downloadcd.dfrobot.com.cn/UNIHIKER/package_unihiker_index.json` to the board manager URLs, install **UNIHIKER**, select **unihiker k10**, and set **USB CDC On Boot: Enabled** to read diagnostics over USB. Its `secrets.h.example` already carries the root certificate.
 
 ### Mobile app
 
