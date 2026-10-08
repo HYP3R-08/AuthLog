@@ -14,7 +14,16 @@
     },
     "plugins": [
       "react-native-nfc-manager",
-      "expo-font"
+      "expo-font",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "AuthLog usa il Bluetooth per configurare il Wi-Fi del lettore"
+        }
+      ],
+      "expo-secure-store"
     ],
     "ios": {
       "supportsTablet": true,

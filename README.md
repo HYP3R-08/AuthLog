@@ -68,6 +68,7 @@ firmware/
   stm32-reader/       STM32 firmware — NFC, ToF, LEDs, lock, UART
   esp8266-gateway/    ESP8266 firmware — Wi-Fi, HTTPS, verdict relay
   k10-gateway/        UNIHIKER K10 firmware: same gateway, plus screen and sound
+  k10-gateway-v2/     K10 firmware v2: Wi-Fi set from the app over Bluetooth
 mobile/               React Native (Expo) app — sign-up, login, NFC write
 supabase/
   functions/          verify-access Edge Function
@@ -126,6 +127,17 @@ STM32 PA12 (USART6 RX, CN10-12)  ◀──────  K10 P1 (GPIO2, TX)
 ```
 
 Use **P0 and P1** only: they are the edge pins wired straight to the ESP32-S3, while the others go through an I/O expander that cannot carry a UART. Power the K10 from its own USB-C port, not from the Nucleo.
+
+### Gateway v2: Wi-Fi set from the app
+
+`firmware/k10-gateway-v2/` removes the Wi-Fi network from the firmware. An administrator sets it from the app (**Home → Dispositivo e Wi-Fi**) over Bluetooth:
+
+1. On first power-on the K10 has no owner and no network, and shows its Bluetooth name (`AuthLog-XXXX`).
+2. The phone pairs by typing the 6-digit code the K10 shows on screen. The link is encrypted and MITM-protected, so the Wi-Fi password never crosses the air in clear and only someone in front of the device can pair.
+3. The first app to connect **claims** the device: it generates a random 256-bit key, keeps it in the phone's keystore and sends it to the K10, which stores only its SHA-256. Claiming is possible once.
+4. From then on, the K10 changes network only for a command carrying the owner's key. In the app the screen is shown to administrators only.
+
+Holding **A + B** while powering on (3 s) is a factory reset: the K10 forgets owner, network and paired phones, and the next app to connect becomes the owner. It needs physical access to the device by design.
 
 ---
 

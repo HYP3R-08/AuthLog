@@ -14,12 +14,14 @@ import LoginScreen from './screens/LoginScreen'
 import SignupScreen from './screens/SignupScreen'
 import HomeScreen from './screens/HomeScreen'
 import AccessLogScreen from './screens/AccessLogScreen'
+import DeviceSetupScreen from './screens/DeviceSetupScreen'
 
 export type RootStackParamList = {
   Login: undefined
   Signup: undefined
   Home: undefined
   AccessLog: undefined
+  DeviceSetup: undefined
 }
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
@@ -75,6 +77,7 @@ export default function App() {
           <Stack.Screen name="Signup" component={SignupScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="AccessLog" component={AccessLogScreen} />
+          <Stack.Screen name="DeviceSetup" component={DeviceSetupScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
