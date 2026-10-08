@@ -117,7 +117,7 @@ Both boards run at 3.3 V, so the lines connect directly — no level shifter.
 
 ### Gateway variant: UNIHIKER K10
 
-The K10 replaces the ESP8266 and speaks the same protocol, so the STM32 only needs two wires moved. On top of relaying the verdict, it shows what is happening ("Avvicina il telefono", "Accesso consentito", "Accesso negato", "Server non raggiungibile") and plays a sound for each. The reader also sends `PRESENCE:NEAR` / `PRESENCE:AWAY` when someone enters or leaves the ToF window, which the K10 uses to greet them; the ESP8266 gateway ignores those lines.
+The K10 replaces the ESP8266 and speaks the same protocol, so the STM32 only needs two wires moved. On top of relaying the verdict, it shows what is happening ("Avvicina il telefono", "Accesso consentito", "Accesso negato", "Server non raggiungibile") and plays a sound for each verdict. The reader also sends `PRESENCE:NEAR` / `PRESENCE:AWAY` when someone enters or leaves the ToF window; the K10 greets them once they have stayed 1.5 s, and the serial monitor accepts the same lines for testing without the STM32; the ESP8266 gateway ignores those lines.
 
 ```
 STM32 PA11 (USART6 TX, CN10-14)  ──────▶  K10 P0 (GPIO1, RX)

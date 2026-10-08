@@ -19,6 +19,9 @@
 //
 // The USB port stays free for diagnostics: `Serial` prints there (enable
 // "USB CDC On Boot" in the Tools menu to see it), never on the reader's UART.
+// It also accepts the reader's own lines, so the gateway can be tested from the
+// Serial Monitor with no STM32 attached: type "PRESENCE:NEAR" or "UUID:<uuid>"
+// and the verdict is printed back there instead of sent to the reader.
 
 #include "unihiker_k10.h"
 #include "ui.h"
@@ -39,6 +42,9 @@ constexpr uint32_t DENIED_SCREEN_MS   = 2500;
 constexpr uint32_t ERROR_SCREEN_MS    = 3000;
 // How long the boot screen may wait for Wi-Fi before admitting it is offline.
 constexpr uint32_t BOOT_GRACE_MS      = 20000;
+// Someone must stay in the ToF window this long before the greeting replaces
+// "Pronto", so a person walking past does not make the screen flicker.
+constexpr uint32_t NEAR_CONFIRM_MS    = 1500;
 
 const char PROTOCOL_UUID_PREFIX[] = "UUID:";
 const char EVENT_PRESENCE_NEAR[]  = "PRESENCE:NEAR";
@@ -50,11 +56,22 @@ const char RESPONSE_ERROR[]       = "AUTH:ERR";
 UNIHIKER_K10 k10;
 HardwareSerial& reader = Serial1;
 
-char lineBuffer[LINE_BUFFER_SIZE];
-size_t lineLength = 0;
+// One line assembler per input. The USB console gets its own, so typing a test
+// line on the PC never interleaves with bytes arriving from the reader.
+struct LineReader {
+  Stream& input;
+  Print& reply;
+  const char* tag;
+  char buffer[LINE_BUFFER_SIZE];
+  size_t length;
+};
+
+LineReader fromReader  = {reader, reader, "reader", {0}, 0};
+LineReader fromConsole = {Serial, Serial, "console", {0}, 0};
 
 bool isOnline = false;
 bool isPersonNear = false;
+uint32_t nearSince = 0;
 bool isShowingResult = false;
 uint32_t resultShownAt = 0;
 uint32_t resultHoldMs = 0;
@@ -86,7 +103,10 @@ void showResting() {
     uiShow(millis() - bootedAt < BOOT_GRACE_MS ? Screen::Booting : Screen::Offline);
     return;
   }
-  uiShow(isPersonNear ? Screen::Near : Screen::Idle);
+  // Re-evaluated on every loop, so the greeting appears by itself once the
+  // presence has lasted NEAR_CONFIRM_MS, without waiting for another event.
+  const bool isConfirmedNear = isPersonNear && millis() - nearSince >= NEAR_CONFIRM_MS;
+  uiShow(isConfirmedNear ? Screen::Near : Screen::Idle);
 }
 
 void showResult(Screen screen, uint32_t holdMs, const String& name = "") {
@@ -103,10 +123,10 @@ void expireResult() {
   }
 }
 
-void handleUuid(const char* uuid) {
+void handleUuid(const char* uuid, Print& reply) {
   if (!isValidUuid(uuid)) {
     Serial.println(F("rejected malformed uuid"));
-    reader.println(RESPONSE_DENIED);
+    reply.println(RESPONSE_DENIED);
     showResult(Screen::Denied, DENIED_SCREEN_MS);
     return;
   }
@@ -118,25 +138,28 @@ void handleUuid(const char* uuid) {
   // then update the screen.
   switch (result.verdict) {
     case Verdict::Granted:
-      reader.println(RESPONSE_GRANTED);
+      reply.println(RESPONSE_GRANTED);
       showResult(Screen::Granted, GRANTED_SCREEN_MS, result.name);
       break;
     case Verdict::Denied:
-      reader.println(RESPONSE_DENIED);
+      reply.println(RESPONSE_DENIED);
       showResult(Screen::Denied, DENIED_SCREEN_MS);
       break;
     case Verdict::Error:
-      reader.println(RESPONSE_ERROR);
+      reply.println(RESPONSE_ERROR);
       showResult(Screen::Error, ERROR_SCREEN_MS);
       break;
   }
 }
 
-void handleLine(const char* line) {
+void handleLine(const char* line, Print& reply) {
   const size_t prefixLength = strlen(PROTOCOL_UUID_PREFIX);
   if (strncmp(line, PROTOCOL_UUID_PREFIX, prefixLength) == 0) {
-    handleUuid(line + prefixLength);
+    handleUuid(line + prefixLength, reply);
   } else if (strcmp(line, EVENT_PRESENCE_NEAR) == 0) {
+    if (!isPersonNear) {
+      nearSince = millis();  // a repeated NEAR must not restart the wait
+    }
     isPersonNear = true;
     showResting();
   } else if (strcmp(line, EVENT_PRESENCE_AWAY) == 0) {
@@ -147,25 +170,27 @@ void handleLine(const char* line) {
 }
 
 // Reads one newline-terminated line without blocking. Over-long lines are
-// discarded rather than silently truncated into a different UUID.
-void pollReader() {
-  while (reader.available()) {
-    const char c = static_cast<char>(reader.read());
+// discarded rather than silently truncated into a different UUID. Every line is
+// echoed to the USB console, so a silent reader shows up as silence there.
+void pollLines(LineReader& source) {
+  while (source.input.available()) {
+    const char c = static_cast<char>(source.input.read());
     if (c == '\r') {
       continue;
     }
     if (c == '\n') {
-      lineBuffer[lineLength] = '\0';
-      if (lineLength > 0) {
-        handleLine(lineBuffer);
+      source.buffer[source.length] = '\0';
+      if (source.length > 0) {
+        Serial.printf("%s> %s\n", source.tag, source.buffer);
+        handleLine(source.buffer, source.reply);
       }
-      lineLength = 0;
+      source.length = 0;
       continue;
     }
-    if (lineLength < LINE_BUFFER_SIZE - 1) {
-      lineBuffer[lineLength++] = c;
+    if (source.length < LINE_BUFFER_SIZE - 1) {
+      source.buffer[source.length++] = c;
     } else {
-      lineLength = 0;
+      source.length = 0;
     }
   }
 }
@@ -194,7 +219,8 @@ void setup() {
 }
 
 void loop() {
-  pollReader();
+  pollLines(fromReader);
+  pollLines(fromConsole);
   expireResult();
   trackNetwork();
   delay(10);

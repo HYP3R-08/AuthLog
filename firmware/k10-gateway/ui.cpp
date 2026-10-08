@@ -118,7 +118,6 @@ void drawIcon(Screen screen, uint32_t accent) {
 
 void playFeedback(Screen screen) {
   switch (screen) {
-    case Screen::Near:    music.playMusic(BA_DING, OnceInBackground); break;
     case Screen::Granted: music.playMusic(POWER_UP, OnceInBackground); break;
     case Screen::Denied:  music.playMusic(POWER_DOWN, OnceInBackground); break;
     case Screen::Error:   music.playMusic(WAWAWAWAA, OnceInBackground); break;
