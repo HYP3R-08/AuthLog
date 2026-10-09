@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar'
 import { DarkTheme, NavigationContainer, type Theme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { useFonts } from 'expo-font'
 import { SpaceGrotesk_500Medium, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk'
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter'
@@ -63,23 +64,25 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <NavigationContainer theme={navigationTheme}>
-        <Stack.Navigator
-          initialRouteName={initialRoute}
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        >
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Signup" component={SignupScreen} />
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="AccessLog" component={AccessLogScreen} />
-          <Stack.Screen name="DeviceSetup" component={DeviceSetupScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <KeyboardProvider>
+        <StatusBar style="light" />
+        <NavigationContainer theme={navigationTheme}>
+          <Stack.Navigator
+            initialRouteName={initialRoute}
+            screenOptions={{
+              headerShown: false,
+              animation: 'slide_from_right',
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Signup" component={SignupScreen} />
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="AccessLog" component={AccessLogScreen} />
+            <Stack.Screen name="DeviceSetup" component={DeviceSetupScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </KeyboardProvider>
     </SafeAreaProvider>
   )
 }

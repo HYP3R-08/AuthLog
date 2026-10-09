@@ -1,8 +1,13 @@
 import React from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type ViewStyle } from 'react-native'
+import { StyleSheet, View, type ViewStyle } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { colors, gradients, space } from '../theme/tokens'
+
+// Room left between the focused field and the top of the keyboard, so the
+// user sees the whole field, its label and a little context below it.
+const KEYBOARD_GAP = 32
 
 interface ScreenProps {
   children: React.ReactNode
@@ -12,15 +17,21 @@ interface ScreenProps {
 
 // The shared backdrop: a soft brand glow at the top fading into the base colour,
 // so every screen sits in the same space instead of on a flat fill.
+//
+// Scrolling screens follow the focused field. The app draws edge-to-edge on
+// Android, where the window no longer shrinks for the keyboard, so
+// KeyboardAvoidingView alone leaves fields hidden under it; the keyboard
+// controller tracks the keyboard frame and scrolls the field into view.
 export default function Screen({ children, scroll = false, contentStyle }: ScreenProps) {
   const body = scroll ? (
-    <ScrollView
+    <KeyboardAwareScrollView
+      bottomOffset={KEYBOARD_GAP}
       contentContainerStyle={[styles.content, contentStyle]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
       {children}
-    </ScrollView>
+    </KeyboardAwareScrollView>
   ) : (
     <View style={[styles.content, styles.fill, contentStyle]}>{children}</View>
   )
@@ -29,12 +40,7 @@ export default function Screen({ children, scroll = false, contentStyle }: Scree
     <View style={styles.root}>
       <LinearGradient colors={gradients.glow} style={styles.glow} pointerEvents="none" />
       <SafeAreaView style={styles.fill} edges={['top', 'bottom']}>
-        <KeyboardAvoidingView
-          style={styles.fill}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          {body}
-        </KeyboardAvoidingView>
+        {body}
       </SafeAreaView>
     </View>
   )
