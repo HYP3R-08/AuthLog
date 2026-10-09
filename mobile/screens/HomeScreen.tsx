@@ -31,6 +31,14 @@ const BEACON_COPY: Record<BeaconState, { title: string; hint: string }> = {
   writing: { title: 'Avvicina il telefono', hint: 'Appoggialo sul lettore e tienilo fermo.' },
   success: { title: 'Pass inviato', hint: 'Mettiti davanti al sensore: la porta ti riconosce.' },
   error: { title: 'Non riuscito', hint: 'Riprova tenendo il telefono fermo sul lettore.' },
+  timeout: { title: 'Nessun lettore', hint: 'Non hai avvicinato il telefono in tempo. Puoi riprovare.' },
+}
+
+// The button is never disabled: after any outcome it offers the next attempt.
+function buttonFor(beacon: BeaconState): { label: string; icon: 'close' | 'radio-outline' | 'refresh' } {
+  if (beacon === 'writing') return { label: 'Annulla', icon: 'close' }
+  if (beacon === 'idle') return { label: 'Usa il pass', icon: 'radio-outline' }
+  return { label: 'Usa di nuovo il pass', icon: 'refresh' }
 }
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
@@ -38,6 +46,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [nfcStatus, setNfcStatus] = useState<NfcStatus>('unavailable')
   const [beacon, setBeacon] = useState<BeaconState>('idle')
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Set while the NFC checks run, before the beacon shows "writing": a second
+  // tap in that window must not start a second session.
+  const isPreparing = useRef(false)
 
   const goToLogin = useCallback(
     () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }),
@@ -61,15 +72,26 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     resetTimer.current = setTimeout(() => setBeacon('idle'), RESULT_DISPLAY_MS)
   }
 
+  function clearResultTimer() {
+    if (resetTimer.current) clearTimeout(resetTimer.current)
+    resetTimer.current = null
+  }
+
   async function handleWrite() {
-    if (!profile) return
+    if (!profile || isPreparing.current) return
     if (beacon === 'writing') {
       await cancelWrite()
       setBeacon('idle')
       return
     }
 
-    const status = await getNfcStatus()
+    // A result still on screen must not reset the beacon to "idle" halfway
+    // through the new attempt.
+    clearResultTimer()
+    isPreparing.current = true
+    const status = await getNfcStatus().finally(() => {
+      isPreparing.current = false
+    })
     setNfcStatus(status)
     if (status === 'disabled') {
       Alert.alert('NFC spento', 'Attiva NFC per usare il telefono come chiave.', [
@@ -88,6 +110,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       const result = await writeUuidToReader(profile.id)
       if (result === 'cancelled') {
         setBeacon('idle')
+        return
+      }
+      if (result === 'timeout') {
+        showResult('timeout')
         return
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
@@ -166,8 +192,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
 
         <Button
-          label={beacon === 'writing' ? 'Annulla' : 'Usa il pass'}
-          icon={beacon === 'writing' ? 'close' : 'radio-outline'}
+          label={buttonFor(beacon).label}
+          icon={buttonFor(beacon).icon}
           variant={beacon === 'writing' ? 'secondary' : 'primary'}
           onPress={handleWrite}
         />

@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, gradients } from '../theme/tokens'
 
-export type BeaconState = 'idle' | 'writing' | 'success' | 'error'
+export type BeaconState = 'idle' | 'writing' | 'success' | 'error' | 'timeout'
 
 const SIZE = 132
 const RING_COUNT = 2
@@ -15,6 +15,7 @@ const ICONS: Record<BeaconState, keyof typeof Ionicons.glyphMap> = {
   writing: 'radio',
   success: 'checkmark',
   error: 'close',
+  timeout: 'time-outline',
 }
 
 const RING_COLORS: Record<BeaconState, string> = {
@@ -22,6 +23,7 @@ const RING_COLORS: Record<BeaconState, string> = {
   writing: colors.brand,
   success: colors.granted,
   error: colors.denied,
+  timeout: colors.warning,
 }
 
 interface NfcBeaconProps {
@@ -57,7 +59,7 @@ export default function NfcBeacon({ state }: NfcBeaconProps) {
   }, [state, pulses])
 
   const ringColor = RING_COLORS[state]
-  const isResult = state === 'success' || state === 'error'
+  const isResult = state === 'success' || state === 'error' || state === 'timeout'
 
   return (
     <View style={styles.root}>
