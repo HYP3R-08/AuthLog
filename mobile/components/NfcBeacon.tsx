@@ -77,15 +77,18 @@ export default function NfcBeacon({ state }: NfcBeaconProps) {
         />
       ))}
       <View style={[styles.halo, { borderColor: ringColor }]} />
-      {isResult ? (
-        <View style={[styles.core, { backgroundColor: ringColor }]}>
-          <Ionicons name={ICONS[state]} size={48} color={colors.background} />
-        </View>
-      ) : (
-        <LinearGradient colors={gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.core}>
-          <Ionicons name={ICONS[state]} size={48} color="#FFFFFF" />
-        </LinearGradient>
-      )}
+      {/* Same structure in every state: the gradient is faded, never remounted
+          (see Button.tsx for why a remounted gradient can render blank). */}
+      <View style={[styles.core, { backgroundColor: isResult ? ringColor : 'transparent' }]}>
+        <LinearGradient
+          pointerEvents="none"
+          colors={gradients.brand}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.coreGradient, { opacity: isResult ? 0 : 1 }]}
+        />
+        <Ionicons name={ICONS[state]} size={48} color={isResult ? colors.background : '#FFFFFF'} />
+      </View>
     </View>
   )
 }
@@ -108,4 +111,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  coreGradient: { ...StyleSheet.absoluteFillObject, borderRadius: SIZE / 2 },
 })

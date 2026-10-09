@@ -66,25 +66,29 @@ export default function Button({
         style,
       ]}
     >
-      {variant === 'primary' ? (
-        <LinearGradient
-          colors={gradients.brand}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradient}
-        >
-          {content}
-        </LinearGradient>
-      ) : (
-        <View style={styles.gradient}>{content}</View>
-      )}
+      {/*
+        The gradient stays mounted for every variant and is only faded in or
+        out. Unmounting and remounting it inside a rounded, clipped parent left
+        it drawn blank on Android (New Architecture) after the first state
+        change: the button kept working but became invisible. It carries its
+        own radius, so the parent no longer needs overflow clipping.
+      */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={gradients.brand}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.gradientLayer, { opacity: variant === 'primary' ? 1 : 0 }]}
+      />
+      <View style={styles.body}>{content}</View>
     </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
-  base: { borderRadius: radius.md, overflow: 'hidden' },
-  gradient: {
+  base: { borderRadius: radius.md },
+  gradientLayer: { ...StyleSheet.absoluteFillObject, borderRadius: radius.md },
+  body: {
     minHeight: 54,
     paddingHorizontal: space.xl,
     alignItems: 'center',
