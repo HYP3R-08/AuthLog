@@ -57,29 +57,25 @@ export default function Button({
       disabled={isInactive}
       accessibilityRole="button"
       accessibilityState={{ disabled: isInactive, busy: loading }}
-      style={({ pressed }) => [
-        styles.base,
-        variant === 'secondary' && styles.secondary,
-        variant === 'danger' && styles.danger,
-        pressed && styles.pressed,
-        isInactive && styles.inactive,
-        style,
-      ]}
+      style={({ pressed }) => [styles.base, pressed && styles.pressed, isInactive && styles.inactive, style]}
     >
       {/*
-        The gradient stays mounted for every variant and is only faded in or
-        out. Unmounting and remounting it inside a rounded, clipped parent left
-        it drawn blank on Android (New Architecture) after the first state
-        change: the button kept working but became invisible. It carries its
-        own radius, so the parent no longer needs overflow clipping.
+        One fixed layer per variant, always mounted, each with a colour that
+        never changes; the variant only picks which layer is opaque. On Android
+        (New Architecture) a remounted gradient rendered blank, leaving the
+        button working but invisible, and a background switched from
+        transparent to a colour lost its rounded corners. Each layer carries its
+        own radius, so the parent needs no overflow clipping.
       */}
       <LinearGradient
         pointerEvents="none"
         colors={gradients.brand}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.gradientLayer, { opacity: variant === 'primary' ? 1 : 0 }]}
+        style={[styles.layer, { opacity: variant === 'primary' ? 1 : 0 }]}
       />
+      <View pointerEvents="none" style={[styles.layer, styles.secondary, { opacity: variant === 'secondary' ? 1 : 0 }]} />
+      <View pointerEvents="none" style={[styles.layer, styles.danger, { opacity: variant === 'danger' ? 1 : 0 }]} />
       <View style={styles.body}>{content}</View>
     </Pressable>
   )
@@ -87,7 +83,7 @@ export default function Button({
 
 const styles = StyleSheet.create({
   base: { borderRadius: radius.md },
-  gradientLayer: { ...StyleSheet.absoluteFillObject, borderRadius: radius.md },
+  layer: { ...StyleSheet.absoluteFillObject, borderRadius: radius.md },
   body: {
     minHeight: 54,
     paddingHorizontal: space.xl,

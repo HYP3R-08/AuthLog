@@ -26,6 +26,8 @@ const RING_COLORS: Record<BeaconState, string> = {
   timeout: colors.warning,
 }
 
+const RESULT_STATES: BeaconState[] = ['success', 'error', 'timeout']
+
 interface NfcBeaconProps {
   state: BeaconState
 }
@@ -77,16 +79,31 @@ export default function NfcBeacon({ state }: NfcBeaconProps) {
         />
       ))}
       <View style={[styles.halo, { borderColor: ringColor }]} />
-      {/* Same structure in every state: the gradient is faded, never remounted
-          (see Button.tsx for why a remounted gradient can render blank). */}
-      <View style={[styles.core, { backgroundColor: isResult ? ringColor : 'transparent' }]}>
+      {/*
+        Every fill is its own fixed layer, always mounted, with a colour that
+        never changes; a state only picks which one is opaque. On Android (New
+        Architecture) both remounting the gradient (it rendered blank) and
+        switching a view's background from transparent to a colour (it lost
+        its rounded corners and showed as a square) misdraw.
+      */}
+      <View style={styles.core}>
         <LinearGradient
           pointerEvents="none"
           colors={gradients.brand}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.coreGradient, { opacity: isResult ? 0 : 1 }]}
+          style={[styles.coreLayer, { opacity: isResult ? 0 : 1 }]}
         />
+        {RESULT_STATES.map((resultState) => (
+          <View
+            key={resultState}
+            pointerEvents="none"
+            style={[
+              styles.coreLayer,
+              { backgroundColor: RING_COLORS[resultState], opacity: state === resultState ? 1 : 0 },
+            ]}
+          />
+        ))}
         <Ionicons name={ICONS[state]} size={48} color={isResult ? colors.background : '#FFFFFF'} />
       </View>
     </View>
@@ -111,5 +128,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  coreGradient: { ...StyleSheet.absoluteFillObject, borderRadius: SIZE / 2 },
+  coreLayer: { ...StyleSheet.absoluteFillObject, borderRadius: SIZE / 2 },
 })
