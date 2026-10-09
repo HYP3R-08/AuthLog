@@ -69,6 +69,7 @@ firmware/
   esp8266-gateway/    ESP8266 firmware — Wi-Fi, HTTPS, verdict relay
   k10-gateway/        UNIHIKER K10 firmware: same gateway, plus screen and sound
   k10-gateway-v2/     K10 firmware v2: Wi-Fi set from the app over Bluetooth
+  k10-gateway-v2-landscape/  the same v2 firmware with a landscape screen layout
 mobile/               React Native (Expo) app — sign-up, login, NFC write
 supabase/
   functions/          verify-access Edge Function
