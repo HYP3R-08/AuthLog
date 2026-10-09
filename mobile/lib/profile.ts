@@ -6,6 +6,30 @@ export interface Profile {
   nome: string
   cognome: string
   isAdmin: boolean
+  isPrimaryAdmin: boolean  // the first administrator: the only one who can promote others
+}
+
+interface AdminRole {
+  isAdmin: boolean
+  isPrimaryAdmin: boolean
+}
+
+// Reads the signed-in user's own admins row (RLS lets each user see only
+// theirs). A database without migration 0003 has no is_primary column: then
+// the user is still recognised as an administrator, just not as the primary.
+async function fetchAdminRole(userId: string): Promise<AdminRole> {
+  const withPrimary = await supabase.from('admins').select('uuid, is_primary').eq('uuid', userId).maybeSingle()
+  if (!withPrimary.error) {
+    return {
+      isAdmin: withPrimary.data !== null,
+      isPrimaryAdmin: withPrimary.data?.is_primary === true,
+    }
+  }
+
+  const plain = await supabase.from('admins').select('uuid').eq('uuid', userId).maybeSingle()
+  // A missing admins table (migration 0002 not applied) reads as "not admin"
+  // rather than breaking the home screen.
+  return { isAdmin: !plain.error && plain.data !== null, isPrimaryAdmin: false }
 }
 
 // Everything the home screen needs about the signed-in user, read through RLS:
@@ -17,9 +41,9 @@ export async function fetchCurrentProfile(): Promise<Profile | null> {
   }
   const user = userData.user
 
-  const [profileResult, adminResult] = await Promise.all([
+  const [profileResult, role] = await Promise.all([
     supabase.from('profiles').select('nome, cognome').eq('id', user.id).maybeSingle(),
-    supabase.from('admins').select('uuid').eq('uuid', user.id).maybeSingle(),
+    fetchAdminRole(user.id),
   ])
 
   if (profileResult.error) {
@@ -31,8 +55,6 @@ export async function fetchCurrentProfile(): Promise<Profile | null> {
     email: user.email ?? '',
     nome: profileResult.data?.nome ?? '',
     cognome: profileResult.data?.cognome ?? '',
-    // A missing admins table (migration not applied yet) reads as "not admin"
-    // rather than breaking the home screen.
-    isAdmin: !adminResult.error && adminResult.data !== null,
+    ...role,
   }
 }

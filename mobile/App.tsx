@@ -16,6 +16,7 @@ import SignupScreen from './screens/SignupScreen'
 import HomeScreen from './screens/HomeScreen'
 import AccessLogScreen from './screens/AccessLogScreen'
 import DeviceSetupScreen from './screens/DeviceSetupScreen'
+import ManageAdminsScreen from './screens/ManageAdminsScreen'
 
 export type RootStackParamList = {
   Login: undefined
@@ -23,6 +24,7 @@ export type RootStackParamList = {
   Home: undefined
   AccessLog: undefined
   DeviceSetup: undefined
+  ManageAdmins: undefined
 }
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
@@ -80,6 +82,7 @@ export default function App() {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="AccessLog" component={AccessLogScreen} />
             <Stack.Screen name="DeviceSetup" component={DeviceSetupScreen} />
+            <Stack.Screen name="ManageAdmins" component={ManageAdminsScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </KeyboardProvider>

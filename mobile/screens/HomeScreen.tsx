@@ -240,6 +240,25 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <Ionicons name="chevron-forward" size={20} color={colors.textFaint} />
         </Pressable>
       )}
+
+      {profile.isPrimaryAdmin && (
+        <Pressable
+          onPress={() => navigation.navigate('ManageAdmins')}
+          style={({ pressed }) => [styles.adminCard, pressed && styles.adminCardPressed]}
+          accessibilityRole="button"
+        >
+          <View style={styles.adminIcon}>
+            <Ionicons name="people-outline" size={22} color={colors.brand} />
+          </View>
+          <View style={styles.adminText}>
+            <AppText variant="bodyStrong">Amministratori</AppText>
+            <AppText variant="caption" color={colors.textMuted}>
+              Nomina nuovi amministratori
+            </AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textFaint} />
+        </Pressable>
+      )}
     </Screen>
   )
 }
