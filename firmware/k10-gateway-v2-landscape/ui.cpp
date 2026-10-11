@@ -17,9 +17,9 @@ constexpr uint32_t COLOR_GRANTED    = 0x3DDC97;
 constexpr uint32_t COLOR_DENIED     = 0xFF5D6C;
 constexpr uint32_t COLOR_WARNING    = 0xFFB547;
 
-// 1 and 3 are the two landscape rotations. If the text comes out upside down
-// for how the board is mounted, switch 1 to 3.
-constexpr uint8_t  SCREEN_DIRECTION = 1;
+// 1 and 3 are the two landscape rotations. 3 matches how the board is mounted
+// on the prototype; if the text comes out upside down, switch to 1.
+constexpr uint8_t  SCREEN_DIRECTION = 3;
 constexpr int16_t  SCREEN_WIDTH     = 320;
 
 constexpr int16_t  MARGIN_X         = 18;
