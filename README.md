@@ -7,11 +7,11 @@ An IoT access-control system that identifies a user via **RFID/NFC**, verifies t
 
 <table>
 <tr>
-<td width="42%"><img src="./docs/device.jpg" alt="The reader mounted by a door: two status LEDs, the NFC window, and the Time-of-Flight sensor on top"></td>
+<td width="42%"><img src="./docs/device.jpg" alt="The reader in its enclosure: the UNIHIKER K10 screen shows Accesso consentito and the green status LED is lit"></td>
 <td width="58%"><img src="./docs/demo.gif" alt="The mobile app writing the user's UUID to the phone's NFC tag"></td>
 </tr>
 <tr>
-<td align="center"><sub>The reader, mounted</sub></td>
+<td align="center"><sub>The reader with the K10 gateway, granting access</sub></td>
 <td align="center"><sub>Enrolment: the app writes the UUID to the phone's tag</sub></td>
 </tr>
 </table>
